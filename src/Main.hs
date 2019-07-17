@@ -15,7 +15,14 @@ data Event
     | Inc
     | Dec
     | SayHello
+    | PromptResp String
+    | StartPrompt
     deriving (Eq, Show)
+
+prompt = do     
+    liftIO $ putStrLn "Enter '+' or '-'"
+    inp <- liftIO $ getLine
+    pure $ PromptResp inp
 
 update' :: Event -> Model -> Effect Event Model
 update' event model = case event of
@@ -25,7 +32,13 @@ update' event model = case event of
     SayHello -> model <# do
         liftIO $ putStrLn "Hello!"
         pure NoEvent
-
+    PromptResp inp-> 
+        case inp of 
+            "+" -> succ model <# prompt
+            "-" -> pred model <# prompt
+            _ -> model <# prompt
+    StartPrompt -> model <# prompt        
+    
 view' :: Model -> View Event
 view' model = div_ []
     [ text "Hello ~ Haskell GUI"
@@ -40,7 +53,7 @@ view' model = div_ []
 main :: IO ()
 main = JSaddle.run 8000 $ startApp App {..}
   where
-    initialAction = NoEvent
+    initialAction = StartPrompt
     model  = defaultModel
     update = update'
     view   = view'
